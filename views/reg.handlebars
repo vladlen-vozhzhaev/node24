@@ -1,0 +1,31 @@
+<form onsubmit="sendForm(this); return false;" action="/reg" method="post">
+    <div class="mb-3">
+        <input name="name" placeholder="Имя" type="text" class="form-control">
+    </div>
+    <div class="mb-3">
+        <input name="lastname" placeholder="Фамилия" type="text" class="form-control">
+    </div>
+    <div class="mb-3">
+        <input name="email" placeholder="Email" type="text" class="form-control">
+    </div>
+    <div class="mb-3">
+        <input name="pass" placeholder="Пароль" type="password" class="form-control">
+    </div>
+    <div class="mb-3">
+        <input type="submit" class="btn btn-primary form-control">
+    </div>
+</form>
+<script>
+    function sendForm(form){
+        let formData = new FormData(form);
+        fetch('/reg', {
+            method: "post",
+            body: formData
+        }).then(response=>response.text())
+        .then(result=>{
+            if(result.result == 'success'){
+                location.href = '/auth';
+            }
+        })
+    }
+</script>
