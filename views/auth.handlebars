@@ -1,10 +1,29 @@
-<form action="/auth" method="post">
+<form action="/auth" onsubmit="sendForm(this); return false;">
     <div class="mb-3">
         <input name="login" placeholder="Email" type="text" class="form-control">
     </div>
     <div class="mb-3">
         <input name="pass" placeholder="Пароль" type="password" class="form-control"></div>
+        <p id="info" class="text-danger" hidden>Неправильный логин или пароль</p>
     <div class="mb-3">
-        <input type="submit" class="form-control btn btn-primary">
+        <input value="Войти" type="submit" class="form-control btn btn-primary">
     </div>
 </form>
+<script>
+    const info = document.getElementById("info");
+    function sendForm(form){
+        info.hidden = true;
+        const formData = new FormData(form);
+        fetch('/auth', {
+            method: "post",
+            body: formData
+        }).then(response=>response.json())
+            .then(result=>{
+                if(result.result == "success"){
+                    location.href = "/";
+                }else{
+                    info.hidden = false;
+                }
+            })
+    }
+</script>
