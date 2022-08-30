@@ -3,10 +3,12 @@ const express = require('express')
 const app = express()
 const multer = require('multer');
 const mysql = require('mysql2');
+const HTMLParser = require('node-html-parser');
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
 const cookieParser = require('cookie-parser');
 const urlencodedParser = express.urlencoded();
+const fs = require('fs');
 const { engine } = require ('express-handlebars');
 const connection = mysql.createConnection({
     host: '127.0.0.1',
@@ -36,15 +38,20 @@ app.get('/reg', (req, res)=>{
 });
 app.post('/reg', multer().fields([]), (req, res)=>{
     console.log(req.body);
-    const login = req.body.email;
+    const login = req.body.email.toLowerCase();
     const pass = req.body.pass;
     const name = req.body.name;
     const lastname = req.body.lastname;
-    // проверить можно ли зарегать пользователя
-    connection.execute(
-        "INSERT INTO `users`(`login`, `pass`, `name`, `lastname`) VALUES (?,?,?,?)",
-        [login, pass, name, lastname]);
-    res.json({result: "success"});
+    connection.execute("SELECT id FROM users WHERE login=?", [login], (err, resultSet)=>{
+        if(resultSet.length)
+            res.json({result: "user_exist"});
+        else{
+            connection.execute(
+                "INSERT INTO `users`(`login`, `pass`, `name`, `lastname`) VALUES (?,?,?,?)",
+                [login, pass, name, lastname]);
+            res.json({result: "success"});
+        }
+    })
 })
 app.get('/auth', (req, res)=>{
     res.render('auth', {title: "Авторизация"});
@@ -67,6 +74,27 @@ app.post("/auth", multer().fields([]), (req, res)=>{
             res.json({result: "error"})
         }
     });
+})
+app.get('/addArticle', (req, res)=>{
+    res.render('addArticle', {title: "Добавить статью"});
+});
+app.post('/addArticle', multer().any(), (req, res)=>{
+    const title = req.body.title;
+    const content = req.body.content;
+    const author = req.body.author;
+    const document = HTMLParser.parse(content);
+    const img = document.querySelector("img");
+    let src = img.getAttribute('src');
+    let base64 = src.split(',')[1];
+    let extension = src.split(',')[0].split('/')[1].split(';')[0];
+    let filename = Date.now()+"."+extension;
+    fs.writeFile('public/userFiles/'+filename, base64, 'base64', (err)=>{
+        console.log(err);
+    });
+    img.setAttribute("src", "/userFiles/"+filename);
+    connection.execute("INSERT INTO `articles` (title, content, author) VALUES (?,?,?)",
+        [title, document.toString(), author]);
+    res.json({result: "success"});
 })
 app.get('/about', (req,  res)=>{
     res.statusCode = 200;
