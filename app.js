@@ -84,17 +84,34 @@ app.post('/addArticle', multer().any(), (req, res)=>{
     const author = req.body.author;
     const document = HTMLParser.parse(content);
     const img = document.querySelector("img");
-    let src = img.getAttribute('src');
-    let base64 = src.split(',')[1];
-    let extension = src.split(',')[0].split('/')[1].split(';')[0];
-    let filename = Date.now()+"."+extension;
-    fs.writeFile('public/userFiles/'+filename, base64, 'base64', (err)=>{
-        console.log(err);
-    });
-    img.setAttribute("src", "/userFiles/"+filename);
+    if(img){
+        let src = img.getAttribute('src');
+        let base64 = src.split(',')[1];
+        let extension = src.split(',')[0].split('/')[1].split(';')[0];
+        let filename = Date.now()+"."+extension;
+        fs.writeFile('public/userFiles/'+filename, base64, 'base64', (err)=>{
+            console.log(err);
+        });
+        img.setAttribute("src", "/userFiles/"+filename);
+    }
     connection.execute("INSERT INTO `articles` (title, content, author) VALUES (?,?,?)",
         [title, document.toString(), author]);
     res.json({result: "success"});
+});
+app.get("/getArticles", (req, res)=>{
+   connection.execute("SELECT * FROM articles", (err, resultSet)=>{
+       res.json(resultSet);
+   })
+});
+app.get('/blog/:articleId', (req,res)=>{
+    const articleId = req.params.articleId;
+    connection.execute("SELECT * FROM articles WHERE id=?",
+        [articleId],
+        (err, resultSet)=>{
+        const article = resultSet[0];
+        res.render('article',
+            {title: article.title, content: article.content, author: article.author});
+    })
 })
 app.get('/about', (req,  res)=>{
     res.statusCode = 200;
